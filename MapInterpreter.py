@@ -3,7 +3,7 @@ import random
 import math
 from pathlib import Path
 currentdir = Path(__file__).parent.resolve()
-path = currentdir / 'TrackData.png'
+path = currentdir / 'TrackData.txt'
 
 width = 16*100 
 height = 9*100
