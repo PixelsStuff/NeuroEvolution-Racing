@@ -14,6 +14,6 @@ That track.
 
 Cars in a NEAT simulation will continuously evolve to run the track in a visual manner. 
 
-#Demo
+# Demo
 <video src=https://github.com/user-attachments/assets/9c9280c3-5b13-4e62-b86b-020518af1734 controls width="100%">
 </video>
