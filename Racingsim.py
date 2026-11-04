@@ -20,10 +20,12 @@ path = currentdir / 'TrackData.txt'
 allobjects = []
 startpos = (100,800,10)
 endpos = (0,0,1)
-showplayer = False
+showplayer = True
 showrays = False
-
 gen = 0
+INITALENDBONUS = 400
+ENDTAMPERRATE = 0.8
+ENDBONUSTIME = 0.5
 
 configpath = currentdir / 'RacingsimNEATconfig.txt'
 class Obj(pygame.sprite.Sprite):
@@ -69,7 +71,7 @@ def interpretobjects(path):
                 endpos = (int(aob[0]),int(aob[1]),int(aob[2]))
 
 class Player:
-    def __init__(self,x,y):
+    def __init__(self,x,y,id=random.randint(0,100000)):
         self.x = x
         self.y = y
         self.img = playerimg
@@ -79,6 +81,9 @@ class Player:
         self.halffactor = 10
         self.action = 0
         self.sensorres = [500,500,500,500,500]
+        self.greensensors = [500,500,500,500,500]
+        self.id = id
+
         self.disttoend = 500
     def accelerate(self):
         self.action = 1
@@ -115,11 +120,16 @@ def drawwindow(win,players):
         playercontrolled.draw(win)
         if showrays:
              for point in playercontrolled.sensorres:
-                pygame.draw.circle(win,(50,255,50),(point[1],point[2]),10)
+                pygame.draw.circle(win,(130,130,230),(point[1],point[2]),10)
+             for point in playercontrolled.greensensors:
+                pygame.draw.circle(win,(130,230,130),(point[1],point[2]),10)  
     if showrays:
         for player in players:
              for point in player.sensorres:
-                  pygame.draw.circle(win,(50,255,50),(point[1],point[2]),10)
+                  pygame.draw.circle(win,(130,130,230),(point[1],point[2]),10)
+    fps = clock.get_fps()
+    text = STATFONT.render(f"FPS: {fps:.1f}", True, (0, 0, 0))
+    win.blit(text, (10, 10))
     
     pygame.display.update()
 
@@ -146,7 +156,7 @@ def pointdetectdistance(xcori,ycori,xcorf,ycorf,rad,angle):
         return 500,0,0
       quadraticpointfirst = (-b + math.sqrt(b**2 - 4*a*c))/ (2*a) #This is just the quadratic formula which is pretty cool
       quadraticpointsecond = (-b - math.sqrt(b**2 - 4*a*c))/ (2*a)
-      dist = min([quadraticpointfirst,quadraticpointsecond])
+      dist = min([quadraticpointfirst,quadraticpointsecond,500])
       xcor = xcori + dist * math.cos((angle)/180*math.pi)
       ycor = ycori - dist * math.sin((angle)/180*math.pi)
 
@@ -162,10 +172,15 @@ def main(genomes,config):
      cars = []
      ge = []
      quota = 0
+     endbounty = INITALENDBONUS
+     countdown = -1
+     carids = 0
+     woncarids = []
      for _,g in genomes:
         net = neat.nn.FeedForwardNetwork.create(g,config)
         nets.append(net)
-        cars.append(Player(startpos[0]+random.randint(-startpos[2],startpos[2]),startpos[1]+random.randint(-startpos[2],startpos[2])))
+        cars.append(Player(startpos[0]+random.randint(-startpos[2],startpos[2]),startpos[1]+random.randint(-startpos[2],startpos[2]),carids))
+        carids += 1
         g.fitness = 0
         ge.append(g)
 
@@ -176,6 +191,7 @@ def main(genomes,config):
         clock.tick(30)
         tt = time.time()
         timepassed += 1
+
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -188,22 +204,27 @@ def main(genomes,config):
             for thing in allobjects:
                 if math.sqrt((car.x-thing.PosX)**2 + (car.y-thing.PosY)**2) < thing.rad:
                      amcolliding = True
-                     if thing.shape == 4:
-                          ge[count].fitness += 500/50 - timepassed/10
-                          for count,car in enumerate(cars): #SCORING FOR OTHER CARS
-                            ge[count].fitness += (1000 - math.sqrt((car.x - endpos[0])**2 + (car.y - endpos[1])**2))/50 - timepassed/10
-                          running = False
+                     if thing.shape == 4 and car.id not in woncarids:
+                          ge[count].fitness += endbounty
+                          endbounty *= 0.8
+                          woncarids.append(car.id)
+                          if countdown == -1:
+                            countdown = ENDBONUSTIME * 30
                           break
                      else:
-                          ge[count].fitness -= 1/30
+                          ge[count].fitness -= 400/(30*20)
             if amcolliding:
-                 
                  car.sensorres = [(0,car.x,car.y)] * 5
             else:
-                car.sensorres = [sensordetectdistance(car.x,car.y,car.angle,oblist=allobjects),sensordetectdistance(car.x,car.y,car.angle+15,oblist=allobjects),sensordetectdistance(car.x,car.y,car.angle-15,oblist=allobjects),sensordetectdistance(car.x,car.y,car.angle+45,oblist=allobjects),sensordetectdistance(car.x,car.y,car.angle-45,oblist=allobjects)]
+                car.sensorres =[]
+                car.greensensors = []
+                for pos in [0,15,45,-15,-45]:
+                     car.sensorres.append(sensordetectdistance(car.x,car.y,car.angle+pos,oblist=allobjects))
+                     car.greensensors.append(pointdetectdistance(car.x,car.y,car.angle+pos,endpos[0],endpos[1],endpos[2]))
             car.disttoend = math.sqrt( (car.x-endpos[0])**2 + (car.y-endpos[1])**2)-endpos[2]
             car.action = 0
-            output = nets[count].activate((car.x, car.y,car.angle,car.disttoend,car.sensorres[0][0],car.sensorres[1][0],car.sensorres[2][0],car.sensorres[3][0],car.sensorres[4][0])) #maybe add 
+            output = nets[count].activate((car.x, car.y,car.angle,car.disttoend,car.sensorres[0][0]/500,
+                                           car.sensorres[1][0]/500,car.sensorres[2][0]/500,car.sensorres[3][0]/500,car.sensorres[4][0]/500,car.greensensors[0][0]/500,car.greensensors[1][0]/500,car.greensensors[2][0]/500,car.greensensors[3][0]/500,car.greensensors[4][0])) #maybe add 
             if output[0] > 0.5:
                 car.accelerate()
             if output[1] > 0.5:
@@ -253,11 +274,18 @@ def main(genomes,config):
             if amcolliding:
                  playercontrolled.sensorres = [(0,playercontrolled.x,playercontrolled.y)] * 5
             else:
-                playercontrolled.sensorres = [sensordetectdistance(playercontrolled.x,playercontrolled.y,playercontrolled.angle,oblist=allobjects),sensordetectdistance(playercontrolled.x,playercontrolled.y,playercontrolled.angle+15,oblist=allobjects),sensordetectdistance(playercontrolled.x,playercontrolled.y,playercontrolled.angle-15,oblist=allobjects),sensordetectdistance(playercontrolled.x,playercontrolled.y,playercontrolled.angle+45,oblist=allobjects),sensordetectdistance(playercontrolled.x,playercontrolled.y,playercontrolled.angle-45,oblist=allobjects)]
-        if  30 * 10 == timepassed or len(cars) == 0:
+                playercontrolled.sensorres =[]
+                playercontrolled.greensensors = []
+                for pos in [0,15,45,-15,-45]:
+                 playercontrolled.sensorres.append(sensordetectdistance(playercontrolled.x,playercontrolled.y,playercontrolled.angle+pos,oblist=allobjects))
+                 playercontrolled.greensensors.append(pointdetectdistance(playercontrolled.x,playercontrolled.y,playercontrolled.angle+pos,endpos[0],endpos[1],endpos[2]))
+        if 30 * 20 == timepassed or len(cars) == 0 or  (-1<countdown<1):
              for count,car in enumerate(cars): #SCORING FOR OTHER CARS
-                ge[count].fitness += (1000 - math.sqrt((car.x - endpos[0])**2 + (car.y - endpos[1])**2))/50 - timepassed/10
+                ge[count].fitness += (1000 - math.sqrt((car.x - endpos[0])**2 + (car.y - endpos[1])**2)) - 200*(timepassed/(30*20))
              running = False
+        if countdown > -1:
+             countdown -=1
+        
         
         drawwindow(win=win,players=cars)
        # print('ittime',time.time()-tt)
@@ -268,7 +296,7 @@ def run(configpath=configpath):
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    winner = p.run(main,50) #50 generations
+    winner = p.run(main,2000) #50 generations
 if __name__ == '__main__':
     run()
 
