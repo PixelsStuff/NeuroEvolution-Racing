@@ -20,7 +20,7 @@ path = currentdir / 'TrackData.txt'
 allobjects = []
 startpos = (100,800,10)
 endpos = (0,0,1)
-showplayer = True
+showplayer = False
 showrays = False
 gen = 0
 INITALENDBONUS = 400
@@ -130,6 +130,8 @@ def drawwindow(win,players):
     fps = clock.get_fps()
     text = STATFONT.render(f"FPS: {fps:.1f}", True, (0, 0, 0))
     win.blit(text, (10, 10))
+    text = STATFONT.render(f"Generation: {gen:.1f}", True, (0, 0, 0))
+    win.blit(text, (9, 30))
     
     pygame.display.update()
 
@@ -220,7 +222,7 @@ def main(genomes,config):
                 car.greensensors = []
                 for pos in [0,15,45,-15,-45]:
                      car.sensorres.append(sensordetectdistance(car.x,car.y,car.angle+pos,oblist=allobjects))
-                     car.greensensors.append(pointdetectdistance(car.x,car.y,car.angle+pos,endpos[0],endpos[1],endpos[2]))
+                     car.greensensors.append(pointdetectdistance(car.x,car.y,endpos[0],endpos[1],endpos[2],car.angle+pos))
             car.disttoend = math.sqrt( (car.x-endpos[0])**2 + (car.y-endpos[1])**2)-endpos[2]
             car.action = 0
             output = nets[count].activate((car.x, car.y,car.angle,car.disttoend,car.sensorres[0][0]/500,
@@ -278,7 +280,7 @@ def main(genomes,config):
                 playercontrolled.greensensors = []
                 for pos in [0,15,45,-15,-45]:
                  playercontrolled.sensorres.append(sensordetectdistance(playercontrolled.x,playercontrolled.y,playercontrolled.angle+pos,oblist=allobjects))
-                 playercontrolled.greensensors.append(pointdetectdistance(playercontrolled.x,playercontrolled.y,playercontrolled.angle+pos,endpos[0],endpos[1],endpos[2]))
+                 playercontrolled.greensensors.append(pointdetectdistance(playercontrolled.x,playercontrolled.y,endpos[0],endpos[1],endpos[2],playercontrolled.angle+pos))
         if 30 * 20 == timepassed or len(cars) == 0 or  (-1<countdown<1):
              for count,car in enumerate(cars): #SCORING FOR OTHER CARS
                 ge[count].fitness += (1000 - math.sqrt((car.x - endpos[0])**2 + (car.y - endpos[1])**2)) - 200*(timepassed/(30*20))
