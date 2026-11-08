@@ -9,6 +9,7 @@ pygame.font.init()
 WINDH = 9*100
 WINDW = 16*100
 STATFONT = pygame.font.SysFont('comicsans',30)
+STATFONTBUTBIG = pygame.font.SysFont('comicsans',90)
 
 currentdir = Path(__file__).parent.resolve()
 
@@ -23,10 +24,13 @@ endpos = (0,0,1)
 showplayer = False
 showrays = False
 gen = 0
+simulationacceleration = 0
+timetonextframe = 0 
+
 INITALENDBONUS = 400
 ENDTAMPERRATE = 0.8
 ENDBONUSTIME = 0.5
-
+REDISWALL = True
 configpath = currentdir / 'RacingsimNEATconfig.txt'
 class Obj(pygame.sprite.Sprite):
      def __init__(self, x,y,rad,shape=1):
@@ -127,14 +131,31 @@ def drawwindow(win,players):
         for player in players:
              for point in player.sensorres:
                   pygame.draw.circle(win,(130,130,230),(point[1],point[2]),10)
-    fps = clock.get_fps()
-    text = STATFONT.render(f"FPS: {fps:.1f}", True, (0, 0, 0))
+    if not simulationacceleration:
+        fps = clock.get_fps()
+        text = STATFONT.render(f"FPS: {fps:.1f}", True, (0, 0, 0))
+    else:
+        if simulationacceleration == 1:
+            text = STATFONT.render(f"Acceleration Enabled", True, (0, 0, 0))
+        else:
+            text = STATFONT.render(f"Hyper-Accel Enabled", True, (0, 0, 0))
     win.blit(text, (10, 10))
     text = STATFONT.render(f"Generation: {gen:.1f}", True, (0, 0, 0))
     win.blit(text, (9, 30))
     
     pygame.display.update()
 
+def drawgenscreen(win):
+        win.fill('white')
+        fps = clock.get_fps()
+        text = STATFONT.render(f"FPS: {fps:.1f}", True, (0, 0, 0))
+        win.blit(text, (10, 10))
+        text = STATFONTBUTBIG.render(f"Hyper-Acceleration Enabled", True, (0, 0, 0))
+        win.blit(text, (WINDW/2-400, WINDH/2-60))
+        text = STATFONTBUTBIG.render(f"Generation: {gen:.1f}", True, (0, 0, 0))
+        win.blit(text, (WINDW/2-400, WINDH/2))
+        pygame.display.update()
+     
 def sensordetectdistance(xcori,ycori,angle,oblist):
       distcalcpos = (500,xcori+math.cos(angle/180*math.pi),ycori-math.sin(angle/180*math.pi))
       smallestdist = 500
@@ -167,6 +188,7 @@ def pointdetectdistance(xcori,ycori,xcorf,ycorf,rad,angle):
 interpretobjects(path)
 
 def main(genomes,config):
+     global simulationacceleration
      global playercontrolled
      global gen
      gen += 1
@@ -178,6 +200,7 @@ def main(genomes,config):
      countdown = -1
      carids = 0
      woncarids = []
+     global timetonextframe
      for _,g in genomes:
         net = neat.nn.FeedForwardNetwork.create(g,config)
         nets.append(net)
@@ -189,18 +212,22 @@ def main(genomes,config):
      timepassed = 0
      playercontrolled = Player(startpos[0]+random.randint(-startpos[2],startpos[2]),startpos[1]+random.randint(-startpos[2],startpos[2]))
      running = True
-     while running:
-        clock.tick(30)
-        tt = time.time()
-        timepassed += 1
 
+     while running:
+        tt = time.time()
         
+        if simulationacceleration ==0:
+            clock.tick(30)
+        timepassed += 1
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
                 pygame.quit()
             if event.type == pygame.KEYDOWN:
-                pass
+                if event.key == pygame.K_a:
+                     simulationacceleration += 1
+                     simulationacceleration = simulationacceleration %3
+                     print('simulation acceleration:',simulationacceleration)
         for count,car in enumerate(cars):
             amcolliding = False
             for thing in allobjects:
@@ -214,16 +241,19 @@ def main(genomes,config):
                             countdown = ENDBONUSTIME * 30
                           break
                      else:
-                          ge[count].fitness -= 400/(30*20)
-            if amcolliding:
-                 car.sensorres = [(0,car.x,car.y)] * 5
-            else:
-                car.sensorres =[]
-                car.greensensors = []
-                for pos in [0,15,45,-15,-45]:
-                     car.sensorres.append(sensordetectdistance(car.x,car.y,car.angle+pos,oblist=allobjects))
-                     car.greensensors.append(pointdetectdistance(car.x,car.y,endpos[0],endpos[1],endpos[2],car.angle+pos))
-            car.disttoend = math.sqrt( (car.x-endpos[0])**2 + (car.y-endpos[1])**2)-endpos[2]
+                          ge[count].fitness -= 800/(30*20)
+            if simulationacceleration != 3 or (simulationacceleration==3 and timepassed %2 ==0 or timepassed < 2):
+                if amcolliding:
+                    car.sensorres = [(0,car.x,car.y)] * 5
+                else:
+                    car.sensorres =[]
+                    car.greensensors = []
+                    for pos in [0,15,45,-15,-45]:
+                        car.sensorres.append(sensordetectdistance(car.x,car.y,car.angle+pos,oblist=allobjects))
+                        car.greensensors.append(pointdetectdistance(car.x,car.y,endpos[0],endpos[1],endpos[2],car.angle+pos))
+
+
+            car.disttoend = math.sqrt((car.x-endpos[0])**2 + (car.y-endpos[1])**2)-endpos[2]
             car.action = 0
             output = nets[count].activate((car.x, car.y,car.angle,car.disttoend,car.sensorres[0][0]/500,
                                            car.sensorres[1][0]/500,car.sensorres[2][0]/500,car.sensorres[3][0]/500,car.sensorres[4][0]/500,car.greensensors[0][0]/500,car.greensensors[1][0]/500,car.greensensors[2][0]/500,car.greensensors[3][0]/500,car.greensensors[4][0])) #maybe add 
@@ -235,7 +265,11 @@ def main(genomes,config):
                 car.turnleft()
 
             if amcolliding:
-                    car.vel = max(1,car.vel*0.8)
+                    if REDISWALL:
+                        car.vel = -car.vel/10
+                    else:
+                        car.vel = max(1,car.vel*0.8)
+                    
             if car.vel > car.halffactor:
                     car.vel += car.accel / math.log(car.vel,car.halffactor)
             else:
@@ -265,8 +299,9 @@ def main(genomes,config):
         if amcolliding:
                     playercontrolled.vel = max(1,playercontrolled.vel*0.8)
                     playercontrolled.vel += playercontrolled.accel
-        playercontrolled.x += playercontrolled.vel * math.cos(playercontrolled.angle/180*math.pi)
-        playercontrolled.y += playercontrolled.vel * -math.sin(playercontrolled.angle/180*math.pi)
+        if not (REDISWALL and amcolliding):
+            playercontrolled.x += playercontrolled.vel * math.cos(playercontrolled.angle/180*math.pi)
+            playercontrolled.y += playercontrolled.vel * -math.sin(playercontrolled.angle/180*math.pi)
         if playercontrolled.action != 1:
             if playercontrolled.vel > 0.1:
                 playercontrolled.vel *= 0.9
@@ -287,9 +322,22 @@ def main(genomes,config):
              running = False
         if countdown > -1:
              countdown -=1
+
+
+        if simulationacceleration !=0:
+             if simulationacceleration == 2:
+                    if time.time() > timetonextframe:
+                         timetonextframe = time.time() + 0.1
+                         drawgenscreen(win=win)
+             else:
+                  if time.time() > timetonextframe:
+                    timetonextframe = time.time() + 1/30
+                    drawwindow(win=win,players=cars)
+        else:
+            drawwindow(win=win,players=cars)
         
-        
-        drawwindow(win=win,players=cars)
+        #if timepassed % 30 == 0:
+        #    print('speed:',0.33/(time.time()-tt))
        # print('ittime',time.time()-tt)
 
 def run(configpath=configpath):
@@ -298,7 +346,7 @@ def run(configpath=configpath):
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    winner = p.run(main,2000) #50 generations
+    winner = p.run(main,5000) 
 if __name__ == '__main__':
     run()
 
