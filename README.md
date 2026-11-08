@@ -24,11 +24,11 @@ Cars in a NEAT simulation will continuously evolve to run the track in a visual 
 
 This is the File where the simulation is being displayed and the NNs are being trained, aside from watching the cars run at a 30fps rate there are 3 modes of learning acceleration that you can toggle through by pressing the "a" key
 
-#####1. Normal Mode (Default)
+##### 1. Normal Mode (Default)
    Clock is locked to 30 fps, simulation runs for human view. Average generation time on a test map (100 generations,) is 20.867 seconds. I will call that the 'Normal Mode rate' which the other modes will be compared to.
 
-#####2. Acceleration Mode (a%3 = 1)
+##### 2. Acceleration Mode (a%3 = 1)
    After Pressing 'a' once, the internal game clock is unlocked but the game will still display at 30fps. Average generation time on a test map (100 generations) was 0.598 seconds, being 3489% Faster than on Normal Mode
 
-#####3. Hyper-Acceleration Mode (a%3 = 2)
+##### 3. Hyper-Acceleration Mode (a%3 = 2)
    After Pressing 'a' twice, The display no longer updates with car positions and instead shows a stats overview screen at 10fps. Average generation time on a test map (100 generations) was 0.336 seconds, being 78% Faster than Acceleration Mode and 6104% faster than normal mode
