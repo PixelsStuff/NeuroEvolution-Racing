@@ -84,8 +84,8 @@ class Player:
         self.accel = 0.25
         self.halffactor = 10
         self.action = 0
-        self.sensorres = [500,500,500,500,500]
-        self.greensensors = [500,500,500,500,500]
+        self.sensorres = [(500,0,0),(500,0,0),(500,0,0),(500,0,0),(500,0,0)]
+        self.greensensors = [(500,0,0),(500,0,0),(500,0,0),(500,0,0),(500,0,0)]
         self.id = id
 
         self.disttoend = 500
@@ -188,6 +188,7 @@ def pointdetectdistance(xcori,ycori,xcorf,ycorf,rad,angle):
 interpretobjects(path)
 
 def main(genomes,config):
+     global showplayer
      global simulationacceleration
      global playercontrolled
      global gen
@@ -228,6 +229,8 @@ def main(genomes,config):
                      simulationacceleration += 1
                      simulationacceleration = simulationacceleration %3
                      print('simulation acceleration:',simulationacceleration)
+                if event.key== pygame.K_p:
+                     showplayer = not showplayer
         for count,car in enumerate(cars):
             amcolliding = False
             for thing in allobjects:
@@ -241,7 +244,7 @@ def main(genomes,config):
                             countdown = ENDBONUSTIME * 30
                           break
                      else:
-                          ge[count].fitness -= 800/(30*20)
+                          ge[count].fitness -= 700/(30*20)
             if simulationacceleration != 3 or (simulationacceleration==3 and timepassed %2 ==0 or timepassed < 2):
                 if amcolliding:
                     car.sensorres = [(0,car.x,car.y)] * 5
@@ -266,7 +269,9 @@ def main(genomes,config):
 
             if amcolliding:
                     if REDISWALL:
-                        car.vel = -car.vel/10
+                        car.vel = -0
+                        car.x -= 5 * math.cos(car.angle/180*math.pi)
+                        car.y -= 5 * -math.sin(car.angle/180*math.pi)
                     else:
                         car.vel = max(1,car.vel*0.8)
                     
@@ -276,6 +281,22 @@ def main(genomes,config):
                  car.vel += car.accel
             car.x += car.vel * math.cos(car.angle/180*math.pi)
             car.y += car.vel * -math.sin(car.angle/180*math.pi)
+
+            if car.x < 0:
+                 car.x = 0
+                 car.vel *= 0.95
+            elif car.x > WINDW:
+                car.x = WINDW
+                car.vel *= 0.95
+            if car.y > WINDH:
+                 car.y = WINDH
+                 car.vel *= 0.95
+            if car.y < 0:
+                 car.y = 0
+                 car.vel *= 0.95
+
+
+
             if car.action != 1:
                 if car.vel > 0.1:
                     car.vel *= 0.9
