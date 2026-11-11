@@ -101,8 +101,8 @@ class Player:
           self.angle+= 360
     def turnleft(self):
          self.angle += 5
-         if self.angle < 0:
-          self.angle+= 360
+         if self.angle > 360:
+          self.angle-= 360
 
     def draw(self,win):
             rotatedimg  = pygame.transform.rotate(self.img,self.angle-90)
@@ -258,7 +258,7 @@ def main(genomes,config):
 
             car.disttoend = math.sqrt((car.x-endpos[0])**2 + (car.y-endpos[1])**2)-endpos[2]
             car.action = 0
-            output = nets[count].activate((car.x, car.y,car.angle,car.disttoend,car.sensorres[0][0]/500,
+            output = nets[count].activate((car.x, car.y,car.angle,car.disttoend,car.vel,car.sensorres[0][0]/500,
                                            car.sensorres[1][0]/500,car.sensorres[2][0]/500,car.sensorres[3][0]/500,car.sensorres[4][0]/500,car.greensensors[0][0]/500,car.greensensors[1][0]/500,car.greensensors[2][0]/500,car.greensensors[3][0]/500,car.greensensors[4][0])) #maybe add 
             if output[0] > 0.5:
                 car.accelerate()
@@ -294,8 +294,6 @@ def main(genomes,config):
             if car.y < 0:
                  car.y = 0
                  car.vel *= 0.95
-
-
 
             if car.action != 1:
                 if car.vel > 0.1:
