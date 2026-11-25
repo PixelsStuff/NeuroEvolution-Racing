@@ -34,7 +34,7 @@ This is the File where the simulation is being displayed and the NNs are being t
    After Pressing 'a' twice, The display no longer updates with car positions and instead shows a stats overview screen at 10fps. Average generation time on a test map (100 generations) was 0.336 seconds, being 78% Faster than Acceleration Mode and 6104% faster than normal mode
 
 
-###MapInterpreter.py
+### MapInterpreter.py
 
 By holding the **up** or **down** arrow keys, the object will increase or decrease in size.
 using the **left** and **right** arrow keys, you can switch between objects.
