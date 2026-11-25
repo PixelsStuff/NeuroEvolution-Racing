@@ -78,6 +78,17 @@ while running:
                     print(selectedshape)
                if event.key == pygame.K_s:
                     writetosave(path,objects)
+               if event.key == pygame.K_LEFT:
+                    selectedshape -= 1
+                    if selectedshape == 0:
+                     selectedshape = 4
+                    if selectedshape == 2:
+                        selectedshape -= 1
+                    print(selectedshape)
+               if event.key == pygame.K_d:
+                for thing in objects:
+                    if math.sqrt((thing.PosX-mouse_x)**2+(thing.PosY-mouse_y)**2) < radius:
+                         objects.remove(thing)
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP]:
              radius += 1
