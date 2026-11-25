@@ -32,3 +32,24 @@ This is the File where the simulation is being displayed and the NNs are being t
 
 ##### 3. Hyper-Acceleration Mode (a%3 = 2)
    After Pressing 'a' twice, The display no longer updates with car positions and instead shows a stats overview screen at 10fps. Average generation time on a test map (100 generations) was 0.336 seconds, being 78% Faster than Acceleration Mode and 6104% faster than normal mode
+
+
+**MapInterpreter.py**
+
+By holding the ****up**** or ****down**** arrow keys, the object will increase or decrease in size.
+using the ****left**** and ****right**** arrow keys, you can switch between objects.
+
+****Click**** to place the object down
+
+Press the ****d**** key to delete the object the mouse is hovering
+
+Press the ****s**** key to save the creation
+
+***Objects and functionallities:***
+The light red circle represents either walls of the track as areas you cant go (current) or slow-down zones like grass that punish cars that travel on it (change REDISWALL = FALSE in racingsim.py)
+
+The grey circle represents the starting point of cars in which all cars will start at random positions in the circle
+
+The green circle represents the finish line/goal for cars
+
+Try to minimize the amount of circles you have to place! The less circles, the faster the program runs!
